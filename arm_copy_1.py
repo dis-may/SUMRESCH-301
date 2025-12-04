@@ -175,7 +175,8 @@ class Arm:
         self.θ   = next_θ
         self.dθ  = next_dθ
 
-if __name__ == "__main__" :
+
+def initial_plotting_setup():
     arm = Arm()
     dt = 0.001
     times = []
@@ -205,3 +206,59 @@ if __name__ == "__main__" :
     legend()
     
     show()
+
+def plot_multiple_trajectories(time, dt, num_trajectories, lower_limit=0, upper_limit=1):
+    bicep_vals = np.linspace(lower_limit, upper_limit, num_trajectories)
+    tricep_vals = np.linspace(lower_limit, upper_limit, num_trajectories)
+
+    trajectories = []
+    
+    for i in range(num_trajectories):
+        for j in range(num_trajectories):
+            arm = Arm()
+            times = []
+            angles = []
+            angular_velocities = []
+
+            while arm.t < time:
+                arm.step(dt, motors=[bicep_vals[i], tricep_vals[j]])
+                times.append(arm.t)
+                angles.append(arm.θ)
+                angular_velocities.append(arm.dθ)
+            
+            trajectories.append((times, angles, angular_velocities, arm.event_times, arm.event_values))
+    
+    subplot2grid((2,1), (0,0))
+    # title(f"")
+    for i in range(num_trajectories):
+        for j in range(num_trajectories):
+            times, angles, angular_velocities, event_times, event_values = trajectories[i * num_trajectories + j]
+            plot(times, angles, label=f"bicep={bicep_vals[i] * BICEP_MAX_FORCE}, tricep={tricep_vals[j] * TRICEP_MAX_FORCE}")
+            plot(event_times, event_values, marker='x', linestyle=None)
+
+    plt.axhline(y=θlim1, color='r', linestyle='--', linewidth=1) 
+    plt.axhline(y=θlim2, color='r', linestyle='--', linewidth=1) 
+    plt.axhline(y=np.pi, color='b', linestyle='--', linewidth=1) 
+    yticks([0, θlim2, np.pi/2, θlim1, np.pi], ['0 (up)', 'θlim2', 'π/2 (hor.)',  'θlim1', 'π (down)'])
+    ylim(0, np.pi*1.2)
+    legend()
+    subplot2grid((2,1), (1,0))
+    for i in range(num_trajectories):
+        for j in range(num_trajectories):
+            times, angles, angular_velocities, event_times, event_values = trajectories[i * num_trajectories + j]
+            plot(times, angular_velocities, label=f"bicep={bicep_vals[i]}, tricep={tricep_vals[j]}")
+    legend()
+    
+    show()
+
+
+
+if __name__ == "__main__" :
+    duration = 3
+    dt = 0.001
+
+
+    # plot_multiple_trajectories(duration, dt, num_trajectories=3)
+    # plot_multiple_trajectories(duration, dt, 3, lower_limit=0.2, upper_limit=0.6)
+    # plot_multiple_trajectories(duration, dt, 2, lower_limit=0.001, upper_limit=0.015)
+    plot_multiple_trajectories(duration, dt, 3, lower_limit=0.00, upper_limit=0.005)
