@@ -42,7 +42,7 @@ m_load = 0.0 ## kg (nothing in hand)
 
 def RHS(time, state, bicep_motor, tricep_motor) :
     θ, dθ = state
-    print(f'RHS: {θ=}, {dθ=}')
+    # print(f'RHS: {θ=}, {dθ=}')
     ## motors should be between 0 and 1
 
     l1 = np.sqrt( d11**2 + d12**2 - 2*d11*d12*np.cos(θ) )
@@ -53,7 +53,8 @@ def RHS(time, state, bicep_motor, tricep_motor) :
     l2 = np.sqrt( d22**2 - d21**2 ) + d21*(np.pi - θ)
     x2 = l2 - x2t
     dotx2 = -d21 * dθ
-
+    print(bicep_motor,tricep_motor)
+    
     F1 = (BICEP_MAX_FORCE  * bicep_motor)  + bm1 * dotx1 + km1 * (x1 - x1_0)
     F2 = (TRICEP_MAX_FORCE * tricep_motor) + bm2 * dotx2 + km2 * (x2 - x2_0)
 
@@ -79,14 +80,14 @@ def RHS(time, state, bicep_motor, tricep_motor) :
     gravity_on_lower_arm = m_arm  * d_arm  * G * np.sin(θ) 
     gravity_on_load      = m_load * d_load * G * np.sin(θ)
 
-    print(f"{time=}, {θ=}, {dθ=}, {F1=}, {F2=}, {t_lim1=}, {t_lim2=}, {gravity_on_lower_arm=}, {gravity_on_load=}")
+    # print(f"{time=}, {θ=}, {dθ=}, {F1=}, {F2=}, {t_lim1=}, {t_lim2=}, {gravity_on_lower_arm=}, {gravity_on_load=}")
 
     ddθ = (1.0/J) * (t_lim1 + t_lim2
-                    # + F1 * ((d11*d12 * np.sin(θ)/l1)) 
-                    # - F2 * d21 
+                    + F1 * ((d11*d12 * np.sin(θ)/l1)) 
+                    - F2 * d21 
                     + gravity_on_lower_arm 
                     + gravity_on_load
-                    - b_arm * dθ *10.0
+                    - b_arm * dθ 
                     )
     
     ## θ, dθ  <-- State variables
@@ -96,23 +97,25 @@ def RHS(time, state, bicep_motor, tricep_motor) :
 def discontinuity_0(t, state, bicep_motor, tricep_motor): 
     θ, dθ = state
     return dθ - 0 
-discontinuity_0.terminal=True ## when the event occurs, stop
+discontinuity_0.terminal=False ## when the event occurs, stop
 
 def discontinuity_θlim1(t, state, bicep_motor, tricep_motor): 
     θ, dθ = state 
     return θ - θlim1
-discontinuity_θlim1.terminal=True ## when the event occurs, stop
+discontinuity_θlim1.terminal=False ## when the event occurs, stop
+discontinuity_θlim1.direction = +1 
 
 def discontinuity_θlim2(t, state, bicep_motor, tricep_motor): 
     θ, dθ = state
     return θ - θlim2
-discontinuity_θlim2.terminal=True ## when the event occurs, stop
+discontinuity_θlim2.terminal=False ## when the event occurs, stop
+discontinuity_θlim2.direction = -1 
 
 class Arm:
     def __init__(self) :
         ## VARIABLES
         self.t = 0.0    ## time
-        self.θ  =  np.pi*0.8  ## arm_angle; pi = down towards gravity; pi/2 = horizontal
+        self.θ  =  np.pi / 2 ## arm_angle; pi = down towards gravity; pi/2 = horizontal
         self.dθ =  0.0    ## arm_angular_velocity        
                              
     def next_state_would_be(self, dt, motors=[0.0,0.0]) :
@@ -121,41 +124,49 @@ class Arm:
         temp_θ  = self.θ
         temp_dθ = self.dθ        
 
-        print(f"--- Integrating from {temp_t} to {exit_time} ---")
+        # print(f"--- Integrating from {temp_t} to {exit_time} ---")
 
         while temp_t < exit_time :
             sol = solve_ivp(RHS, [temp_t, exit_time], [temp_θ, temp_dθ], args=(motors),
                             dense_output=True, 
                             events=[
-                                # discontinuity_0,
-                                # discontinuity_θlim1,
-                                # discontinuity_θlim2
+                                discontinuity_0,
+                                discontinuity_θlim1,
+                                discontinuity_θlim2
                                 ], 
-                            method='RK45', maxt_step=0.0001)
+                            method='RK45', max_step=0.01)
             temp_t = sol.t[-1]            
             temp_θ, temp_dθ = sol.y[0,-1], sol.y[1,-1]            
-            print(f"{temp_t=}, {temp_θ=}, {temp_dθ=}")
+            # print(f"{temp_t=}, {temp_θ=}, {temp_dθ=}")
             #quit()
-            print(f"  Events: {sol.t_events}")
+            # print(f"  Events: {sol.t_events}")
             # quit()
             
-            for i in range(len(sol.t_events)):
-                if sol.t_events[i].size > 0:
-                    t_impact = sol.t_events[i][0]
+            # If an event occurred, detect which one and reset/clip
+            # events = sol.t_events  # list of arrays, same order as events list
+            # event_fired = None
+            # for idx, ev_times in enumerate(events):
+            #     if ev_times.size > 0:
+            #         event_fired = idx
+            #         break
 
-                    temp_dθ = sol.y[1, -1]
+            # if event_fired is not None:
+            #     # event 0 -> θlim1, event 1 -> θlim2
+            #     if event_fired == 0:
+            #         # clamp angle at upper limit, zero velocity (sticky limit)
+            #         temp_θ = θlim1 - 1E-8
+            #         # temp_dθ = 0
+            #     elif event_fired == 1:
+            #         temp_θ = θlim2 + 1E-8
+            #         # temp_dθ = -0.8 * temp_dθ
 
-                    # Discontinuous velocity reset
-                    temp_dθ = -e * temp_dθ
-
-                    # Restart slightly above platform
-                    temp_t = t_impact + e
-                    temp_θ, temp_dθ = temp_dθ * e + 1, temp_dθ
+            #     # advance time by a tiny epsilon to avoid immediate re-trigger
+            #     temp_t = temp_t + 1E-8
             
             
         return temp_θ, temp_dθ
     
-    def step(self, dt, motors=[0.0,0.0]) :
+    def step(self, dt,  motors=[0.0,0.0]) :
         next_θ, next_dθ = self.next_state_would_be(dt, motors)
         self.t  += dt
         self.θ   = next_θ
@@ -167,8 +178,8 @@ if __name__ == "__main__" :
     times = []
     angles = []
     angular_velocities = []
-    while arm.t < 3 :
-        arm.step(dt, motors=[0.0,0.0])
+    while arm.t < 1.1:
+        arm.step(dt, motors=[0.00,0.05])
         times.append(arm.t)
         angles.append(arm.θ)
         angular_velocities.append(arm.dθ)
