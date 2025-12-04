@@ -36,7 +36,7 @@ blim  =   6E-3  ## Nms/rad (limiter damping coefficient?)
 ## FOR ME TO DETERMINE
 BICEP_MAX_FORCE = 1500.0 ## N (google AI generated guess)
 TRICEP_MAX_FORCE = 600.0 ## N (google AI generated guess)
-e = 1E-8
+eps = 1E-8 # epsilon to advance time when event is triggered
 
 m_load = 0.0 ## kg (nothing in hand)
 
@@ -53,7 +53,7 @@ def RHS(time, state, bicep_motor, tricep_motor) :
     l2 = np.sqrt( d22**2 - d21**2 ) + d21*(np.pi - θ)
     x2 = l2 - x2t
     dotx2 = -d21 * dθ
-    print(bicep_motor,tricep_motor)
+
     
     F1 = (BICEP_MAX_FORCE  * bicep_motor)  + bm1 * dotx1 + km1 * (x1 - x1_0)
     F2 = (TRICEP_MAX_FORCE * tricep_motor) + bm2 * dotx2 + km2 * (x2 - x2_0)
@@ -83,8 +83,8 @@ def RHS(time, state, bicep_motor, tricep_motor) :
     # print(f"{time=}, {θ=}, {dθ=}, {F1=}, {F2=}, {t_lim1=}, {t_lim2=}, {gravity_on_lower_arm=}, {gravity_on_load=}")
 
     ddθ = (1.0/J) * (t_lim1 + t_lim2
-                    + F1 * ((d11*d12 * np.sin(θ)/l1)) 
-                    - F2 * d21 
+                    - F1 * ((d11*d12 * np.sin(θ)/l1)) 
+                    + F2 * d21 
                     + gravity_on_lower_arm 
                     + gravity_on_load
                     - b_arm * dθ 
@@ -94,29 +94,31 @@ def RHS(time, state, bicep_motor, tricep_motor) :
     return [dθ, ddθ] ## return derivatives
 
 ### discontinuities
-def discontinuity_0(t, state, bicep_motor, tricep_motor): 
-    θ, dθ = state
-    return dθ - 0 
-discontinuity_0.terminal=False ## when the event occurs, stop
+# def discontinuity_0(t, state, bicep_motor, tricep_motor): 
+#     θ, dθ = state
+#     return dθ - 0 
+# discontinuity_0.terminal=True ## when the event occurs, stop
 
 def discontinuity_θlim1(t, state, bicep_motor, tricep_motor): 
     θ, dθ = state 
     return θ - θlim1
-discontinuity_θlim1.terminal=False ## when the event occurs, stop
-discontinuity_θlim1.direction = +1 
+discontinuity_θlim1.terminal=True ## when the event occurs, stop
+# discontinuity_θlim1.direction = +1 
 
 def discontinuity_θlim2(t, state, bicep_motor, tricep_motor): 
     θ, dθ = state
     return θ - θlim2
-discontinuity_θlim2.terminal=False ## when the event occurs, stop
-discontinuity_θlim2.direction = -1 
+discontinuity_θlim2.terminal=True ## when the event occurs, stop
+# discontinuity_θlim2.direction = -1 
 
 class Arm:
     def __init__(self) :
         ## VARIABLES
         self.t = 0.0    ## time
         self.θ  =  np.pi / 2 ## arm_angle; pi = down towards gravity; pi/2 = horizontal
-        self.dθ =  0.0    ## arm_angular_velocity        
+        self.dθ =  0.0    ## arm_angular_velocity 
+        self.event_times = []   
+        self.event_values = [] 
                              
     def next_state_would_be(self, dt, motors=[0.0,0.0]) :
         exit_time = self.t + dt
@@ -130,7 +132,7 @@ class Arm:
             sol = solve_ivp(RHS, [temp_t, exit_time], [temp_θ, temp_dθ], args=(motors),
                             dense_output=True, 
                             events=[
-                                discontinuity_0,
+                                # discontinuity_0,
                                 discontinuity_θlim1,
                                 discontinuity_θlim2
                                 ], 
@@ -141,27 +143,28 @@ class Arm:
             #quit()
             # print(f"  Events: {sol.t_events}")
             # quit()
-            
+
             # If an event occurred, detect which one and reset/clip
-            # events = sol.t_events  # list of arrays, same order as events list
-            # event_fired = None
-            # for idx, ev_times in enumerate(events):
-            #     if ev_times.size > 0:
-            #         event_fired = idx
-            #         break
+            events = sol.t_events  # list of arrays, same order as events list
+            event_fired = None
+            for idx, ev_times in enumerate(events):
+                if ev_times.size > 0:
+                    event_fired = idx
+                    break
 
-            # if event_fired is not None:
-            #     # event 0 -> θlim1, event 1 -> θlim2
-            #     if event_fired == 0:
-            #         # clamp angle at upper limit, zero velocity (sticky limit)
-            #         temp_θ = θlim1 - 1E-8
-            #         # temp_dθ = 0
-            #     elif event_fired == 1:
-            #         temp_θ = θlim2 + 1E-8
-            #         # temp_dθ = -0.8 * temp_dθ
+            if event_fired is not None:
+                print("EVENT FIRED", sol.t[-1])
+                self.event_times.append(sol.t[-1])
+                self.event_values.append(θlim1 if idx == 0 else θlim2)
 
-            #     # advance time by a tiny epsilon to avoid immediate re-trigger
-            #     temp_t = temp_t + 1E-8
+                # reset the integration by starting it with the next step
+                dθ, ddθ = RHS(sol.t[-1], [temp_θ, temp_dθ], motors[0], motors[1])
+                temp_θ = temp_θ + (dθ * eps)
+                temp_dθ = temp_dθ + (ddθ * eps)
+
+                # advance time by a tiny epsilon to avoid immediate re-trigger
+                temp_t = temp_t + eps
+
             
             
         return temp_θ, temp_dθ
@@ -178,17 +181,27 @@ if __name__ == "__main__" :
     times = []
     angles = []
     angular_velocities = []
-    while arm.t < 1.1:
-        arm.step(dt, motors=[0.00,0.05])
+    bicep = 0.05
+    tricep = 0.00
+    
+    while arm.t < 3:
+        # arm.step(dt, motors=[0.00,0.005]) # looks nice
+        arm.step(dt, motors=[bicep, tricep])
         times.append(arm.t)
         angles.append(arm.θ)
         angular_velocities.append(arm.dθ)
+
     subplot2grid((2,1), (0,0))
+    title(f"Bicep={bicep}, Tricep={tricep}, with RHS restart ")
     plot(times, angles, label="angle (rad)")
-    yticks([0, np.pi/2, np.pi], ['0 (up)', 'π/2 (hor.)', 'π (down)'])
+    plot(arm.event_times, arm.event_values, marker='x', linestyle=None)
+    plt.axhline(y=θlim1, color='r', linestyle='--', linewidth=1) 
+    plt.axhline(y=θlim2, color='r', linestyle='--', linewidth=1) 
+    yticks([0, θlim2, np.pi/2, θlim1, np.pi], ['0 (up)', 'θlim2', 'π/2 (hor.)',  'θlim1', 'π (down)'])
     ylim(0, np.pi*1.2)
     legend()
     subplot2grid((2,1), (1,0))
     plot(times, angular_velocities, label="angular velocity (rad/s)")
     legend()
+    
     show()
