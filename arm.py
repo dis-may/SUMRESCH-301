@@ -130,7 +130,7 @@ class Arm:
                                 # discontinuity_θlim1,
                                 # discontinuity_θlim2
                                 ], 
-                            method='RK45', maxt_step=0.0001)
+                            method='RK45', max_step=0.0001)
             temp_t = sol.t[-1]            
             temp_θ, temp_dθ = sol.y[0,-1], sol.y[1,-1]            
             print(f"{temp_t=}, {temp_θ=}, {temp_dθ=}")
