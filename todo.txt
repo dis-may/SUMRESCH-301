@@ -1,3 +1,4 @@
+## Thurs
 1. Figure out why bicep and tricep motors are inverted
 2. What range of values for the two motors do not go beyond the physiological limits (e,g, 20 < theta < 180 degrees)
 3. plot the limits (soft) 
@@ -7,3 +8,13 @@ probably not in Thurs next week
 Mon and wed most likely to be in
 
 17 Dece,ber leave
+
+## Tues 9 Dec
+1. initial positions vary
+2. implement a feedback system / controller
+3. maybe make a table about the differences between vehicles and this
+4. look at how varying k can vary how quickly the arm returns to equilibrium
+5. write an email to the authors to see if the model is correct
+
+Tutorial on Thursday?
+10-12pm 
