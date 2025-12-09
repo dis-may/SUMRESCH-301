@@ -19,7 +19,7 @@ r_arm  =   0.035 ## m
 l_1    =     0.0 ## bicep length (mm)
 l_2    =     0.0 ## tricep length (mm)
 J      =  0.0279 ## kg.m^2 (nothing in hand) 
-G      = 9.80665 ## m/s^2
+G      =  9.80665 ## m/s^2
 
 ## fitted parameters
 b_arm =  0.221  ## Nms/rad (damping coefficient)
@@ -48,7 +48,7 @@ def RHS(time, state, bicep_motor, tricep_motor) :
     l1 = np.sqrt( d11**2 + d12**2 - 2*d11*d12*np.cos(θ) )
     assert l1 > 0.0, "l1 is non-positive!"+f" {l1=}, {d11=}, {d12=}, {θ=}"
     x1 = l1 - x1t
-    dotx1 = (abs(d11**2 - d12**2 - 2*d11*d12*np.cos(θ))**-0.5) * d11*d12 * np.sin(θ) * dθ 
+    dotx1 = (abs(d11**2 - d12**2 - 2*d11*d12*np.cos(θ))**-0.5) * d11*d12 * np.sin(θ) * dθ # double check why abs is there
     
     l2 = np.sqrt( d22**2 - d21**2 ) + d21*(np.pi - θ)
     x2 = l2 - x2t
@@ -99,6 +99,17 @@ def RHS(time, state, bicep_motor, tricep_motor) :
 #     return dθ - 0 
 # discontinuity_0.terminal=True ## when the event occurs, stop
 
+def log_when_θ_is_zero(t, state, bicep_motor, tricep_motor):
+    θ, dθ = state 
+    return θ - 0
+log_when_θ_is_zero.terminal=False # do not want to stop, just record if it goes out of range
+
+def log_when_θ_is_pi(t, state, bicep_motor, tricep_motor):
+    θ, dθ = state 
+    return θ - np.pi
+log_when_θ_is_pi.terminal=False # do not want to stop, just record if it goes out of range
+
+
 def discontinuity_θlim1(t, state, bicep_motor, tricep_motor): 
     θ, dθ = state 
     return θ - θlim1
@@ -134,7 +145,9 @@ class Arm:
                             events=[
                                 # discontinuity_0,
                                 discontinuity_θlim1,
-                                discontinuity_θlim2
+                                discontinuity_θlim2,
+                                log_when_θ_is_zero,
+                                log_when_θ_is_pi,
                                 ], 
                             method='RK45', max_step=0.01)
             temp_t = sol.t[-1]            
@@ -152,8 +165,9 @@ class Arm:
                     event_fired = idx
                     break
 
-            if event_fired is not None:
-                print("EVENT FIRED", sol.t[-1])
+            if event_fired == 0 or event_fired == 1:
+                # when a discontinuity is reached, terminal = True
+                # print("EVENT FIRED", sol.t[-1])
                 self.event_times.append(sol.t[-1])
                 self.event_values.append(θlim1 if idx == 0 else θlim2)
 
@@ -164,6 +178,11 @@ class Arm:
 
                 # advance time by a tiny epsilon to avoid immediate re-trigger
                 temp_t = temp_t + eps
+            elif event_fired == 2 or event_fired == 3:
+                # when logging reached to find values out of range
+                # skip for now 
+                pass 
+        
 
             
             
@@ -182,8 +201,8 @@ def initial_plotting_setup():
     times = []
     angles = []
     angular_velocities = []
-    bicep = 0.05
-    tricep = 0.00
+    bicep = 0.00
+    tricep = 0.005
     
     while arm.t < 3:
         # arm.step(dt, motors=[0.00,0.005]) # looks nice
@@ -193,7 +212,7 @@ def initial_plotting_setup():
         angular_velocities.append(arm.dθ)
 
     subplot2grid((2,1), (0,0))
-    title(f"Bicep={bicep}, Tricep={tricep}, with RHS restart ")
+    title(f"Bicep={bicep}, Tricep={tricep}, normal ")
     plot(times, angles, label="angle (rad)")
     plot(arm.event_times, arm.event_values, marker='x', linestyle=None)
     plt.axhline(y=θlim1, color='r', linestyle='--', linewidth=1) 
@@ -204,6 +223,8 @@ def initial_plotting_setup():
     subplot2grid((2,1), (1,0))
     plot(times, angular_velocities, label="angular velocity (rad/s)")
     legend()
+
+    # savefig("./plots/b0_t0_005_normal_sign")
     
     show()
 
@@ -241,13 +262,13 @@ def plot_multiple_trajectories(time, dt, num_trajectories, lower_limit=0, upper_
     plt.axhline(y=np.pi, color='b', linestyle='--', linewidth=1) 
     yticks([0, θlim2, np.pi/2, θlim1, np.pi], ['0 (up)', 'θlim2', 'π/2 (hor.)',  'θlim1', 'π (down)'])
     ylim(0, np.pi*1.2)
-    legend()
+    # legend()
     subplot2grid((2,1), (1,0))
     for i in range(num_trajectories):
         for j in range(num_trajectories):
             times, angles, angular_velocities, event_times, event_values = trajectories[i * num_trajectories + j]
             plot(times, angular_velocities, label=f"bicep={bicep_vals[i]}, tricep={tricep_vals[j]}")
-    legend()
+    # legend()
     
     show()
 
@@ -257,8 +278,11 @@ if __name__ == "__main__" :
     duration = 3
     dt = 0.001
 
+    # initial_plotting_setup()
+
 
     # plot_multiple_trajectories(duration, dt, num_trajectories=3)
     # plot_multiple_trajectories(duration, dt, 3, lower_limit=0.2, upper_limit=0.6)
     # plot_multiple_trajectories(duration, dt, 2, lower_limit=0.001, upper_limit=0.015)
-    plot_multiple_trajectories(duration, dt, 3, lower_limit=0.00, upper_limit=0.005)
+    # plot_multiple_trajectories(duration, dt, 3, lower_limit=0.00, upper_limit=0.005)
+    plot_multiple_trajectories(duration, dt, 10, lower_limit=0, upper_limit=0.1)
