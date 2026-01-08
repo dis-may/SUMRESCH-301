@@ -2,12 +2,8 @@ from pylab import *
 from scipy.integrate import solve_ivp
 import numpy as np
 
-## ball params
-e = 0.8 # elasticity
-eps = 1e-8
 
-
-## PARAMETERS
+## ARM PARAMETERS
 m_arm  =    0.92 ## kg
 d11    =    0.045 ## m
 d12    =    0.269 ## m
@@ -19,12 +15,20 @@ x1_0   =   0.146 ## m
 x2_0   =   0.155 ## m
 l_arm  =   0.340 ## m
 d_arm  =   0.150 ## m        
-d_load =   0.330 ## m
+d_load =   0.330 ## m (we use this as the length asw)
 r_arm  =   0.035 ## m        
 l_1    =     0.0 ## bicep length (mm)
 l_2    =     0.0 ## tricep length (mm)
 J      =  0.0279 ## kg.m^2 (nothing in hand) 
 G      =  9.80665 ## m/s^2
+
+arm_height = 1.0 ## m (the height of the elbow joint above the ground)
+
+## BALL PARAMETERS
+e = 0.8 # elasticity
+r_ball = 0.12 ## m (average radius of basketball)
+x_ball = d_load ## m (the distance of the arm = fixed ball x pos)
+
 
 ## fitted parameters
 b_arm =  0.221  ## Nms/rad (damping coefficient)
@@ -114,8 +118,27 @@ discontinuity_θlim2.terminal=True ## when the event occurs, stop
 
 def hit_platform(t, state, bicep_motor, tricep_motor):
     θ, dθ, y, v = state
-    return y - 0 # when this is negative, then, the event fires (height is 0)
+    return y - r_ball # when this is negative, then, the event fires (height is 0)
 hit_platform.terminal = True
+
+def collision(t, state, bicep_motor, tricep_motor):
+    # average height 
+    θ, dθ, y, v = state
+
+    # coordinates of the arm
+    x_arm = sin(θ) * d_load
+    y_arm = cos(θ) * d_load + arm_height# d_load is the arm radius
+
+    # x_ball is fixed
+    y_ball = y
+
+    # length of the vector of the difference between arm and ball
+    distance = np.sqrt((x_arm - x_ball)**2 + (y_arm - y_ball)**2)
+    if distance < r_ball:
+        return -1.0
+    else:
+        return 1
+hit_platform.terminal = False # change back to True later
 
 class ArmBall:
     def __init__(self, θ=np.pi/2) :
@@ -127,6 +150,8 @@ class ArmBall:
         self.v = 0.0 ## initial velocity
         self.event_times = []   
         self.event_values = [] 
+        self.collision_times = []
+        self.collision_values = []
                              
     def next_state_would_be(self, dt, motors=[0.0,0.0]) :
         exit_time = self.t + dt
@@ -145,6 +170,7 @@ class ArmBall:
                                 discontinuity_θlim1,
                                 discontinuity_θlim2,
                                 hit_platform,
+                                collision,
                                 ], 
                             method='RK45', max_step=0.01)
             temp_t = sol.t[-1]            
@@ -187,8 +213,13 @@ class ArmBall:
 
                 # Restart slightly above platform
                 temp_t = t_impact + eps
-                temp_y = temp_v * eps
-                
+                temp_y = r_ball + temp_v * eps
+            
+            elif event_fired == 3: # collision
+                self.collision_times.append(sol.t[-1])
+                self.collision_values.append(temp_y)
+                print("SD:LFHSDKLJF")
+
 
             
             
@@ -225,16 +256,22 @@ def initial_plotting_setup():
 
     subplot2grid((2,1), (0,0))
     title(f"Bicep={bicep}, Tricep={tricep}, normal ")
-    plot(times, angles, label="angle (rad)")
-    plot(arm.event_times, arm.event_values, marker='x', linestyle=None)
-    plt.axhline(y=θlim1, color='r', linestyle='--', linewidth=1) 
-    plt.axhline(y=θlim2, color='r', linestyle='--', linewidth=1) 
-    yticks([0, θlim2, np.pi/2, θlim1, np.pi], ['0 (up)', 'θlim2', 'π/2 (hor.)',  'θlim1', 'π (down)'])
-    ylim(0, np.pi*1.2)
+    heights = [cos(angle) * d_arm + arm_height for angle in angles]
+    plot(times, heights, label="angle (rad)")
+    
+    # plot(arm.event_times, arm.event_values, marker='x', linestyle=None)
+    # plt.axhline(y=θlim1, color='r', linestyle='--', linewidth=1) 
+    # plt.axhline(y=θlim2, color='r', linestyle='--', linewidth=1) 
+    ax = plt.gca() # Get the current axes
+    # ax.yaxis.set_inverted(True) # Invert the y-axis
+    # yticks([0, θlim2, np.pi/2, θlim1, np.pi], ['0 (up)', 'θlim2', 'π/2 (hor.)',  'θlim1', 'π (down)'])
+    # ylim(0, np.pi*1.2)
     legend()
     subplot2grid((2,1), (1,0))
     # plot(times, angular_velocities, label="angular velocity (rad/s)")
     plot(times, ball_y, label="height (y) in metres")
+    plot(arm.collision_times, arm.collision_values, marker='x', linestyle=None)
+
     legend()
 
     # savefig("./plots/b0_t0_005_normal_sign")

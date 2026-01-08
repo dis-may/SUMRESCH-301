@@ -29,10 +29,10 @@ def hit_platform(t, state):
     return state[0] - bounce_height # when this is negative, then, the event fires
 hit_platform.terminal = True
 
-def woohoo(t, state):
-    return state[0] - 0.5
-woohoo.terminal = False
-# hit_platform.direction = -1
+# def woohoo(t, state):
+#     return state[0] - 0.5
+# woohoo.terminal = False
+# # hit_platform.direction = -1
 
 # ---------------------------
 # Simulation loop
@@ -54,7 +54,7 @@ while t_current < tf and bounces < max_bounces:
         dynamics,
         (t_current, tf),
         state_current,
-        events=[hit_platform, woohoo],
+        events=[hit_platform],
         max_step=0.02,
         rtol=1e-7,
         atol=1e-9

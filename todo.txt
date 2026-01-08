@@ -18,3 +18,10 @@ Mon and wed most likely to be in
 
 Tutorial on Thursday?
 10-12pm 
+
+## Tues 16 Dec
+1. Play with the equations some more
+2. Simulating the basketball bouncing up and down
+3. how to detect if the hand is touching the basketball
+4. figure out the math when the hand touches the ball
+5. SM plots
