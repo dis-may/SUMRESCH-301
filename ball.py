@@ -11,9 +11,9 @@ bounce_height = 0.2   # <-- PLATFORM HEIGHT
 y0 = 1.0 # initial height
 v0 = 0.0 # initial velocity
 t0 = 0.0
-tf = 2
+tf = 10
 eps = 1e-8
-max_bounces = 100
+max_bounces = 10
 
 # ---------------------------
 # ODE system
@@ -31,7 +31,7 @@ hit_platform.terminal = True
 
 def woohoo(t, state):
     return state[0] - 0.5
-woohoo.terminal = True
+woohoo.terminal = False
 # hit_platform.direction = -1
 
 # ---------------------------
@@ -64,7 +64,7 @@ while t_current < tf and bounces < max_bounces:
     y_all.append(sol.y[0])
     v_all.append(sol.y[1])
 
-    print(sol.t_events)
+    # print(sol.t_events)
 
     # If impact detected
     if sol.t_events != None and sol.t_events[0].size > 0:
@@ -82,11 +82,11 @@ while t_current < tf and bounces < max_bounces:
         t_current = t_impact + eps
         state_current = np.array([bounce_height + v_post * eps, v_post])
     
-    elif sol.t_events != None and sol.t_events[1].size > 0:
-        print("SOMETHING")
-        other_event_times.append(sol.t_events[1][0])
-        state_current = [0.5, -sol.y[1, -1]]
-        continue
+    # elif sol.t_events != None and sol.t_events[1].size > 0:
+    #     # print("SOMETHING")
+    #     other_event_times.append(sol.t_events[1][0])
+    #     state_current = [0.5, -sol.y[1, -1]]
+    #     continue
 
     else:
         break
