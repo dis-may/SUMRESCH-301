@@ -149,6 +149,11 @@ def collision(t, state, bicep_motor, tricep_motor):
 hit_platform.terminal = True # change back to True later to restart integration
 # collision.direction = -1
 
+def hard_limit(t, state, bicep_motor, tricep_motor):
+    θ, dθ, y, v = state
+    return θ - np.pi
+hard_limit.terminal = True
+
 class ArmBall:
     def __init__(self, θ=np.pi/2) :
         ## VARIABLES
@@ -180,6 +185,7 @@ class ArmBall:
                                 discontinuity_θlim2,
                                 hit_platform,
                                 collision,
+                                hard_limit
                                 ], 
                             method='RK45', max_step=0.01)
             temp_t = sol.t[-1]            
@@ -250,6 +256,16 @@ class ArmBall:
 
                 # advance time
                 temp_t = temp_t + eps
+            
+            elif event_fired == 4:
+                dθ, ddθ, v, g = RHS(sol.t[-1], [temp_θ, temp_dθ, temp_y, temp_v], motors[0], motors[1])
+                temp_θ = temp_θ - eps # to stop the event from firing again
+                temp_dθ = 0 # stop moving angularly
+                temp_y = temp_y + (v * eps)
+                temp_v = temp_v + (g * eps)
+
+                
+                temp_t = temp_t + eps
 
 
             
@@ -274,9 +290,9 @@ def initial_plotting_setup():
     ball_v = []
     angular_velocities = []
     bicep = 0.00
-    tricep = 0.2
+    tricep = 0.4
     
-    while arm.t < 0.15:
+    while arm.t < 1:
         # arm.step(dt, motors=[0.00,0.005]) # looks nice
         arm.step(dt, motors=[bicep, tricep])
         times.append(arm.t)
@@ -285,7 +301,7 @@ def initial_plotting_setup():
         ball_y.append(arm.y)
         ball_v.append(arm.v)
 
-    subplot2grid((2,1), (0,0))
+    subplot2grid((1,2), (0,0))
     title(f"Bicep={bicep}, Tricep={tricep}, normal ")
     arm_y = [cos(angle) * d_load + arm_height for angle in angles]
     plot(times, arm_y, label="arm height (m)")
@@ -308,7 +324,7 @@ def initial_plotting_setup():
 
     
 
-    subplot2grid((2,1), (1,0))
+    subplot2grid((1, 2), (0,1))
     # plot(times, angular_velocities, label="angular velocity (rad/s)")
     
     # legend()
@@ -316,7 +332,8 @@ def initial_plotting_setup():
     plot(arm_x[:], arm_y[:], label="arm")
     plot([x_ball] * len(ball_y), ball_y, label="ball")
     plot([x_ball] * len(ball_y), [y + r_ball for y in ball_y], label="top of ball")
-
+    ax = plt.gca() # Get the current axes
+    ax.axis('equal')
     legend()
 
 

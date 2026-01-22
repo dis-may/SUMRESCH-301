@@ -25,3 +25,10 @@ Tutorial on Thursday?
 3. how to detect if the hand is touching the basketball
 4. figure out the math when the hand touches the ball
 5. SM plots
+
+
+## Mon 12 Jan
+1. ~~Write a summary of everything for meeting with Nick early next week ~~
+2. Collisions
+3. ~~send the vehicles data files to Matthew~~
+4. Braitenberg style control of the arm

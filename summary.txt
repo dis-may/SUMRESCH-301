@@ -1,0 +1,16 @@
+write a summary for what to do in the project
+
+imagine you're an expert in the physics stuff 
+
+e.g. theta is the angle or the arm d(theta) is the thingy
+ball has fixed x but varies y0
+want to know how to appropriately calculate the forces of the hand on the ball
+
+
+
+Model: Arm + hand bouncing a basketball
+* x_ball: the ball is fixed at an x location (equal to the length of the arm)
+* y_ball: the ball has an initial height, which varies based on bouncing off the ground or being hit by the arm
+* θ: the angle between the bicep and the forearm
+* dθ: the angular velocity 
+* 
