@@ -32,3 +32,37 @@ Tutorial on Thursday?
 2. Collisions
 3. ~~send the vehicles data files to Matthew~~
 4. Braitenberg style control of the arm
+
+
+
+What did i do:
+* Written a summary of the ball thingy
+* A drive to survive - free energy principle
+* evollutionary algorithms
+
+Minutes:
+* look in the literature 
+* should try to remove every 500th row instead of jsut the 500th row -> it does that already
+1. run make_real_data
+2. run preprocess -> make sure that it visualises right
+3. understand how it works
+4. do it for all the vehicles (not just aggression and love)
+next step : substitute the controller with the NN -> input is SM states, output is the DELTA of the motor state (+=)
+Tuesday 12pm next meeting
+
+## Tues 3 Feb 12pm
+Talking points:
+* aggression can run -> need to comment out the num num_workers
+* it does remove every trajectory from time step 500 to 501
+* aster meeting
+* hours for 369 tutor
+
+
+Thurs 5 Feb
+* make it control the movements of the vehicle
+* compare the actual vs predicted next (change in) sensor value
+
+COMPSCI 369
+Tuesdays 1-2
+Wednesdays 10-11
+Cellular automata, numpy and something else ?
