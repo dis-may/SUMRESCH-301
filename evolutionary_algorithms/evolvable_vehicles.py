@@ -2,7 +2,7 @@ from pylab import *
 
 class Genotype:
     def __init__(self, *args):
-        ## e.g. ls_lm=None, lm_rm=None, rs_lm=None, rs_rm=None
+        ## e.g. ls_lm=None, ls_rm=None, rs_lm=None, rs_rm=None
         self.genes = list(args)
         self.n = len(args)
 
@@ -31,6 +31,12 @@ class Vehicle:
         self.r_robot = r_robot # radius of the robot
         self.b = b # the angle between the directional sensors
         self.light = light # assume only one light 
+
+
+        # initialise the rotational speed of both motors to 0
+        self.l_m = 0
+        self.r_m = 0
+
 
         ## DYNAMIC VARIABLES
         self.x = x
@@ -87,16 +93,19 @@ class Vehicle:
         r_s = self.sensor_value_at(rsx, rsy, rsa)
 
         # genes = [ls_lm, ls_rm, rs_lm, rs_rm]
-        l_m = self.genes.genes[0] * l_s + self.genes.genes[2] * r_s  # note that there is no gene for starting velocity
-        r_m = self.genes.genes[1] * l_s + self.genes.genes[3] * r_s
+        self.l_m = self.genes.genes[0] * l_s + self.genes.genes[2] * r_s  # note that there is no gene for starting velocity
+        self.r_m = self.genes.genes[1] * l_s + self.genes.genes[3] * r_s
+
+        # self.l_m = r_s
+        # self.r_m = l_s
 
         # how x, y, and a change from the two motors, m_l and m_r
         # save it as part of the vehicle object
-        self.dxdt = cos(self.a)*(l_m + r_m) * self.r_wheel
-        self.dydt = sin(self.a)*(l_m + r_m) *  self.r_wheel
-        self.dadt = self.r_wheel * (r_m - l_m) / (2*self.r_robot)
+        self.dxdt = cos(self.a)*(self.l_m + self.r_m) * self.r_wheel
+        self.dydt = sin(self.a)*(self.l_m + self.r_m) *  self.r_wheel
+        self.dadt = self.r_wheel * (self.r_m - self.l_m) / (2*self.r_robot)
 
-        return l_s, r_s, l_m, r_m
+        return l_s, r_s, self.l_m, self.r_m
 
     def update(self, DT) -> None:
         """

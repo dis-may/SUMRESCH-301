@@ -14,7 +14,7 @@ def get_model(vehicle_type):
     model = dSMSPredictorNN().to(device)
     base_path = Path(__file__).parent.resolve() 
     # Construct a path to a data file relative to that directory
-    file_path = base_path / "ml_models" / vehicle_type.name.lower() + "_" + "model.pth"
+    file_path = base_path / "ml_models" / f"{vehicle_type.name.lower()}_model.pth"
     model.load_state_dict(torch.load(file_path, weights_only=True))
     model.eval()
 

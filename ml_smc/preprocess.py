@@ -1,8 +1,10 @@
 from pylab import *
 
 #BASE_NAME = "bs"
-#BASE_NAME = "love"
-BASE_NAME = "aggression"
+# BASE_NAME = "love"
+# BASE_NAME = "aggression"
+# BASE_NAME = "fear"
+BASE_NAME = "explorer"
 
 DT = 0.01
 

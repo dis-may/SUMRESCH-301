@@ -3,6 +3,8 @@ import torch
 #from torch import nn
 #from torch.utils.data import DataLoader, TensorDataset
 from dsms_predictor_nn import dSMSPredictorNN
+from cmcrameri import cm 
+
 
 device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 print(f"Using {device} device")
@@ -37,13 +39,14 @@ outputs = apply_along_axis(
 )
 
 # set default colormap to 'viridis'
-mpl.rcParams['image.cmap'] = 'berlin'
+mpl.rcParams['image.cmap'] = 'cmc.berlin'
+# mpl.rcParams['image.cmap'] = 'viridis'
 
 MIN_DELTA = -0.9
 MAX_DELTA = +0.9
 
 ## unspecified indices
-U = -1#int(RES//2)
+U = int(RES//2)
 
 #print(np.shape(outputs))
 NR = 2; NC = 4

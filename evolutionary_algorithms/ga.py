@@ -55,7 +55,8 @@ def epoch(population: list[Vehicle], duration, DT) -> list[list[float], list[flo
         for i in range(n):
             # save SM history (s_l, s_r, m_l, m_r)
             v = population[i]
-            sm_h[i].append(v.prep())
+            l_s, r_s, l_m,  r_m = v.prep()
+            sm_h[i].append((l_s, r_s, l_m,  r_m,))
         
         # update x, y, a and save them in histories
         for i in range(n):
@@ -63,6 +64,7 @@ def epoch(population: list[Vehicle], duration, DT) -> list[list[float], list[flo
             v.update(DT)
             x, y, a = v.get_state()
             x_h[i].append(x); y_h[i].append(y); a_h[i].append(a)
+            # print(x_h, y_h, a_h)
     
     # save the last SM state experienced
     for i in range(n):
@@ -111,16 +113,61 @@ def mutate(population: list[Vehicle], mutation_rate, mutation_strength):
         
         # print("genotype after", v.genes.genes)
 
+def display(title, x_h, y_h, a_h, t_h, x_lim, y_lim):
+    
+    plt.rcParams.update({'font.size': 10})
+    fig_1 = plt.figure(figsize=(4,4))
+
+    axes_1 = fig_1.add_axes([0.1, 0.1, 0.8, 0.8])
+
+    # plotting all vehicles in the simulation
+    for i in range(len(x_h)):
+        # plot(x_h[i][0],y_h[i][0],'bo')
+        axes_1.plot(x_h[i], y_h[i])
+        axes_1.plot(x_h[i][-1],y_h[i][-1],'ro', ms=3)
+        # axes_1.plot(x_h[i][0],y_h[i][0],'rx')
+
+        # # plot arrow for final position
+        # speed = self.vehicles[i].m_l + self.vehicles[i].m_r
+
+
+    # plotting all lights in the simulation
+    # for l in self.lights:
+    #     axes_1.plot(l.x, l.y,'bx') 
+    
+    ## fix up the figure to look decent    
+    axes_1.set_aspect('equal', adjustable='box')
+    axes_1.set_xlim(-x_lim,x_lim); axes_1.set_ylim(-y_lim,y_lim)
+    axes_1.set_xticks(np.arange(-x_lim, x_lim+5, 5))
+    axes_1.set_yticks(np.arange(-y_lim, y_lim+5, 5))
+    # axes_1 = plt.gca()
+    # axes_1.set_aspect('equal', adjustable='box')
+    axes_1.grid()
+    # axes_1.set_xlabel('x'); axes_1.set_ylabel('y')
+    axes_1.set_title(title)
+    
+    # savefig(title + "_random_larger_font", dpi=300)
+    show()
     
 
+def testing_a():
+    # g = Genotype(0, 1, 1, 0) ## aggression
+    g = Genotype(0.6641450727677876, 0.229184857943735, 0.5261044852050254, 0.3767926197637974)
+    # g = Genotype(0, 1, 0, 1) ## fear
 
-if __name__ == '__main__':
-    initial_population = make_population(1, 3)
+    v = Vehicle(g, -2, -2, np.pi/4)
+    x_h, y_h, a_h, t_h, sm_h = epoch([v], 5, 0.1)
+    display("shit", x_h, y_h, a_h, t_h,  4, 4)
+
+def old_testing():
+    n = 1
+    size = 3 # -size and +size is the box where vehicles spawn
+    initial_population = make_population(n, size)
     print("init genes", [v.genes.genes for v in initial_population])
 
 
     population = copy.deepcopy(initial_population)
-    scores = evaluate(initial_population, population, 3)
+    scores = evaluate(initial_population, population, size)
 
     for i in range(1000):
         # print(i)
@@ -128,8 +175,20 @@ if __name__ == '__main__':
         epoch(population, 10, 0.1)
         # print(population)
         if i == 0 or i == 999:
-            print(evaluate(initial_population, population, 3))
+            print(evaluate(initial_population, population, size))
             print("after genes", [v.genes.genes for v in population])
+    
+    x_h, y_h, a_h, t_h, sm_h = epoch(population, 10, 0.1)
+    # for x in x_h:
+    #     for stuff in x:
+    #         print(stuff, end=" ")
+    display("Test", x_h, y_h, a_h, t_h, 5, 5)
+
+    
+
+
+if __name__ == '__main__':
+    testing_a()
 
 
 

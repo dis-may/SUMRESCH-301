@@ -3,9 +3,11 @@ import numpy as np
 
 N_COLS = 7 # x, y, α, ls, rs, lm, rm
 
-ROBOT_TYPE = "aggression"
-#ROBOT_TYPE = "love"
-DATA_DIR = "/home/megb269/Desktop/braitenberg_data/" + ROBOT_TYPE + "/"
+# ROBOT_TYPE = "aggression"
+# ROBOT_TYPE = "love"
+# ROBOT_TYPE = "fear"
+ROBOT_TYPE = "explorer"
+DATA_DIR = "/Users/maygan/Documents/notes/CS789/compsci-789/braitenberg_data/" + ROBOT_TYPE + "/"
 
 ## load every .npy file in DATA_DIR and concatenate them into one big array
 import os
@@ -19,7 +21,7 @@ for file_name in file_list:
 data = np.concatenate(data_list, axis=0)
 #data = data[:,3:]
 N_ITS = data.shape[0]
-#print(data.shape)
+# print(data.shape)  # (5060100, 7) -> there are 1010 trajectories, each with 501 time steps
 
 print(data[-5000:-4990,:])
 np.save(f"{ROBOT_TYPE}_data.npy", data)

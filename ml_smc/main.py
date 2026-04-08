@@ -9,8 +9,10 @@ import matplotlib.pyplot as plt
 
 
 #BASE_NAME = "bs"
-#BASE_NAME = "love"
-BASE_NAME = "aggression"
+# BASE_NAME = "love"
+# BASE_NAME = "aggression"
+# BASE_NAME = "fear"
+BASE_NAME = "explorer"
 
 
 # Import bs_data.npy to use as dataset
@@ -25,7 +27,7 @@ dataloader = DataLoader(
     dataset,
     batch_size=256*4,
     shuffle=True, # Shuffles data every epoch
-    num_workers=8 # Use multiple processes for data loading
+    # num_workers=8 # Use multiple processes for data loading # needs to be commented out for my Mac to run it lol
 )
 
 for X, y in dataloader:
@@ -87,7 +89,7 @@ def train(dataloader, model, loss_fn, optimizer):
 #     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")            
 
 def test(dataloader, model, loss_fn):
-    model.eval()
+    model.eval() # set the model to evaluation mode
     # test_input is two test cases where for each I'd like to see what the output of the
     # trained NN is
     test_input = np.array([[0,1,0,1],
@@ -106,8 +108,8 @@ errs = []
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     train(dataloader, model, loss_fn, optimizer)
-    #test(dataloader, model, loss_fn)
-    #model.eval()
+    test(dataloader, model, loss_fn)
+    model.eval()
     #model(torch.randn(1,4).to(device))
 print("Done!")
 
@@ -115,5 +117,6 @@ plt.plot(errs)
 plt.yscale('log')
 plt.show()
 
-torch.save(model.state_dict(), "model.pth")
-print("Saved PyTorch Model State to model.pth")
+save_location = "./ml_models/" + BASE_NAME.lower() + "_model.pth"
+torch.save(model.state_dict(), save_location)
+print("Saved PyTorch Model State to " + save_location)
