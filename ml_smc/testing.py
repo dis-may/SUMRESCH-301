@@ -20,6 +20,19 @@ def get_model(vehicle_type):
 
     return model
 
+def get_frankenstein_model():
+    device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
+    # print(f"Using {device} device")
+
+    model = dSMSPredictorNN().to(device)
+    base_path = Path(__file__).parent.resolve() 
+    # Construct a path to a data file relative to that directory
+    file_path = base_path / "ml_models" / "frankenstein_model.pth"
+    model.load_state_dict(torch.load(file_path, weights_only=True))
+    model.eval()
+
+    return model
+
 def get_motor_values(model, l_s, r_s, l_m, r_m):
     # model.load_state_dict(torch.load(file_path, weights_only=True))
     device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"

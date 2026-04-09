@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 # BASE_NAME = "love"
 # BASE_NAME = "aggression"
 # BASE_NAME = "fear"
-BASE_NAME = "explorer"
+# BASE_NAME = "explorer"
+BASE_NAME = "frankenstein"
 
 
 # Import bs_data.npy to use as dataset
@@ -117,6 +118,7 @@ plt.plot(errs)
 plt.yscale('log')
 plt.show()
 
-save_location = "./ml_models/" + BASE_NAME.lower() + "_model.pth"
+# save_location = "./ml_models/" + BASE_NAME.lower() + "_model.pth"
+save_location = ".\\ml_smc\\ml_models\\" + BASE_NAME.lower() + "_model.pth"
 torch.save(model.state_dict(), save_location)
 print("Saved PyTorch Model State to " + save_location)
