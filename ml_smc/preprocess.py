@@ -5,7 +5,8 @@ from pylab import *
 # BASE_NAME = "aggression"
 # BASE_NAME = "fear"
 # BASE_NAME = "explorer"
-BASE_NAME = "frankenstein"
+# BASE_NAME = "frankenstein"
+BASE_NAME = "frankenstein_aggression_love"
 
 DT = 0.01
 
