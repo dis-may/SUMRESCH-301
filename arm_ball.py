@@ -233,8 +233,6 @@ class ArmBall:
             elif event_fired == 3 and temp_t != 0.0: # collision
                 self.collision_times.append(sol.t[-1])
                 self.collision_values.append(temp_y)
-                # print("SD:LFHSDKLJF")
-                # time.sleep(2)
 
                 # print(temp_v)# reverse direction of v
                 # temp_v -= 1

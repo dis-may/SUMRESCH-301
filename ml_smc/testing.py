@@ -1,53 +1,67 @@
-from dsms_predictor_nn import dSMSPredictorNN
-from pylab import *
 import torch
+from torch import nn
+from torch.utils.data import DataLoader, TensorDataset
+from dsms_predictor_nn import dSMSPredictorNN
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from enum import Enum, auto
 
-from pathlib import Path
+from vehicle_functions import *
 
-def get_model(vehicle_type):
-    """
-    Takes in a vehicle type
-    """
-    device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
-    # print(f"Using {device} device")
+BASE_NAME = "love"
+# BASE_NAME = "aggression"
+# BASE_NAME = "fear"
+# BASE_NAME = "explorer"
 
-    model = dSMSPredictorNN().to(device)
-    base_path = Path(__file__).parent.resolve() 
-    # Construct a path to a data file relative to that directory
-    file_path = base_path / "ml_models" / f"{vehicle_type.name.lower()}_model.pth"
-    model.load_state_dict(torch.load(file_path, weights_only=True))
+class VehicleType(Enum):
+    AGGRESSION = auto()
+    FEAR = auto()
+    LOVE = auto()
+    EXPLORER = auto()
+
+device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
+
+errs = []
+
+
+def test(dataloader, model, loss_fn):
+    size = len(dataloader.dataset)
+    num_batches = len(dataloader)
     model.eval()
+    test_loss, correct = 0, 0
+    with torch.no_grad():
+        for X, y in dataloader:
+            X, y = X.to(device), y.to(device)
+            
+            pred = model(X)
+            test_loss += loss_fn(pred, y).item()
+            # correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+            correct += (pred.argmax(dim=1) == y.argmax(dim=1)).sum().item()
+    test_loss /= num_batches
+    correct /= size
+    errs.append(test_loss)
+    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")      
 
-    return model
+# Import bs_data.npy to use as dataset
+inputs          = torch.from_numpy(np.load(f'{BASE_NAME}_inputs.npy')).float()
+correct_outputs = torch.from_numpy(np.load(f'{BASE_NAME}_correct_outputs.npy')).float()
 
-def get_frankenstein_model(combination=""):
-    device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
-    # print(f"Using {device} device")
+# 2. Create a TensorDataset
+dataset = TensorDataset(inputs,correct_outputs)
 
-    model = dSMSPredictorNN().to(device)
-    base_path = Path(__file__).parent.resolve() 
-    # Construct a path to a data file relative to that directory
-    file_path = base_path / "ml_models" / f"frankenstein_{combination}model.pth"
-    model.load_state_dict(torch.load(file_path, weights_only=True))
-    model.eval()
+# 3. Create a DataLoader
+dataloader = DataLoader(
+    dataset,
+    batch_size=256*4,
+    shuffle=True, # Shuffles data every epoch
+    # num_workers=8 # Use multiple processes for data loading # needs to be commented out for my Mac to run it lol
+)
 
-    return model
-
-def get_motor_values(model, l_s, r_s, l_m, r_m):
-    # model.load_state_dict(torch.load(file_path, weights_only=True))
-    device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
-
-    def sample_output(input) :
-        #return(input[0], input[1], input[2], input[3])
-        input_tensor = torch.from_numpy(input.reshape(1,4)).float().to(device)
-        with torch.no_grad():
-            output_tensor = model(input_tensor)
-        return output_tensor.cpu().detach().numpy().reshape(-1)
-
-    # print(l_s, r_s, l_m, r_m)
-    s = sample_output(np.array([l_s, r_s, l_m, r_m]))
-    # print(s)
-    return s[2], s[3] # predicted values of (m_l, m_r)
+loss_fn = nn.MSELoss()#CrossEntropyLoss()
 
 
-    
+model = get_model(VehicleType.AGGRESSION)
+test(dataloader, model, loss_fn)
+
+print(errs)

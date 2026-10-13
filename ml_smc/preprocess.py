@@ -1,12 +1,14 @@
 from pylab import *
 
 #BASE_NAME = "bs"
-# BASE_NAME = "love"
+BASE_NAME = "love"
 # BASE_NAME = "aggression"
 # BASE_NAME = "fear"
 # BASE_NAME = "explorer"
 # BASE_NAME = "frankenstein"
-BASE_NAME = "frankenstein_aggression_love"
+# BASE_NAME = "frankenstein_aggression_love"
+# BASE_NAME = "frankenstein_fear_explorer"
+# BASE_NAME = "frankenstein_aggression_fear"
 
 DT = 0.01
 
@@ -28,6 +30,8 @@ inputs          = raw[:-1, :]
 correct_outputs = diff(raw, axis=0) 
 #correct_outputs[:] /= DT
 
+print(shape(inputs))
+print(shape(correct_outputs))
 
 
 # remove every 500th row to avoid trajectory discontinuities
@@ -39,8 +43,11 @@ correct_outputs = np.delete(correct_outputs, np.s_[500::501], axis=0)
 # show()
 # quit()
 
-inputs          = raw[:-1, [3,4,5,6]]
-correct_outputs = raw[1:, [3,4,5,6]]
+# inputs          = inputs[:-1, [3,4,5,6]]
+# correct_outputs = correct_outputs[1:, [3,4,5,6]]
+
+inputs          = inputs[:, [3,4,5,6]]
+correct_outputs = correct_outputs[:, [3,4,5,6]]
 
 # set default markersize to 1
 mpl.rcParams['lines.markersize'] = 1

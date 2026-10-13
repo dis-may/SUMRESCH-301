@@ -4,7 +4,9 @@ import os
 
 N_COLS = 7 # x, y, α, ls, rs, lm, rm
 
-robot_types = ["aggression", "love"] # for all robots
+# robot_types = ["aggression", "love"] 
+# robot_types = ["fear", "explorer"] 
+robot_types = ["aggression", "fear"] 
 
 # Laptop directory 
 DATA_DIR = "/Users/maygan/Documents/notes/CS789/compsci-789/braitenberg_data/"  # hard-coded for laptop
@@ -36,4 +38,4 @@ for robot_type in robot_types:
 # print(data[-5000:-4990,:])
 
 #all data shape (20240400, 7)
-np.save("frankenstein_aggression_love_data.npy", all_data)
+np.save(f"frankenstein_{"_".join(robot_types)}_data.npy", all_data)

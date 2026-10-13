@@ -5,6 +5,7 @@ from dsms_predictor_nn import dSMSPredictorNN
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import pickle
 
 
 
@@ -12,9 +13,11 @@ import matplotlib.pyplot as plt
 # BASE_NAME = "love"
 # BASE_NAME = "aggression"
 # BASE_NAME = "fear"
-# BASE_NAME = "explorer"
+BASE_NAME = "explorer"
 # BASE_NAME = "frankenstein"
-BASE_NAME = "frankenstein_aggression_love"
+# BASE_NAME = "frankenstein_aggression_love"
+# BASE_NAME = "frankenstein_fear_explorer"
+# BASE_NAME = "frankenstein_aggression_fear"
 
 
 # Import bs_data.npy to use as dataset
@@ -75,37 +78,39 @@ def train(dataloader, model, loss_fn, optimizer):
             #print(pred,X)
         errs.append(float(loss))
 
-# def test(dataloader, model, loss_fn):
-#     size = len(dataloader.dataset)
-#     num_batches = len(dataloader)
-#     model.eval()
-#     test_loss, correct = 0, 0
-#     with torch.no_grad():
-#         for X, y in dataloader:
-#             X, y = X.to(device), y.to(device)
-#             pred = model(X)
-#             test_loss += loss_fn(pred, y).item()
-#             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
-#     test_loss /= num_batches
-#     correct /= size
-#     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")            
-
 def test(dataloader, model, loss_fn):
-    model.eval() # set the model to evaluation mode
-    # test_input is two test cases where for each I'd like to see what the output of the
-    # trained NN is
-    test_input = np.array([[0,1,0,1],
-                           [0.8664798,   3.7320678,   2.8454657,  -2.8668346]])
-    test_tensor = torch.from_numpy(test_input).float().to(device)
+    size = len(dataloader.dataset)
+    num_batches = len(dataloader)
+    model.eval()
+    test_loss, correct = 0, 0
     with torch.no_grad():
-        pred = model(test_tensor)
-        print(f"Test Input: \n {test_tensor.cpu().numpy()}")
-        print(f"Model Output: \n {pred.cpu().numpy()}")
+        for X, y in dataloader:
+            X, y = X.to(device), y.to(device)
+            pred = model(X)
+            test_loss += loss_fn(pred, y).item()
+            correct += (pred.argmax(1) == y.argmax(1)).type(torch.float).sum().item()
+    test_loss /= num_batches
+    correct /= size
+    epoch_errors.append(test_loss)
+    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")            
+
+# def test(dataloader, model, loss_fn):
+#     model.eval() # set the model to evaluation mode
+#     # test_input is two test cases where for each I'd like to see what the output of the
+#     # trained NN is
+#     test_input = np.array([[0,1,0,1],
+#                            [0.8664798,   3.7320678,   2.8454657,  -2.8668346]])
+#     test_tensor = torch.from_numpy(test_input).float().to(device)
+#     with torch.no_grad():
+#         pred = model(test_tensor)
+#         print(f"Test Input: \n {test_tensor.cpu().numpy()}")
+#         print(f"Model Output: \n {pred.cpu().numpy()}")
 
 
 
 epochs = 10
 errs = []
+epoch_errors = []
 
 for t in range(epochs):
     print(f"Epoch {t+1}\n-------------------------------")
@@ -115,8 +120,17 @@ for t in range(epochs):
     #model(torch.randn(1,4).to(device))
 print("Done!")
 
-plt.plot(errs)
+with open(BASE_NAME + "_" + "errors_new.pkl", "wb") as file:
+    pickle.dump(errs, file)
+
+with open(BASE_NAME + "_" + "epoch_error.pkl", "wb") as file:
+    pickle.dump(epoch_errors, file)
+plt.plot(errs[::10])
 plt.yscale('log')
+
+title = BASE_NAME.capitalize() + " Error"
+
+plt.savefig(f"./new_plots_with_rk4/{"".join(title.split())}")
 plt.show()
 
 save_location = "./ml_smc/ml_models/" + BASE_NAME.lower() + "_model.pth"
