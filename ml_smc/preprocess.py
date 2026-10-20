@@ -1,8 +1,8 @@
 from pylab import *
 
 #BASE_NAME = "bs"
-BASE_NAME = "love"
-# BASE_NAME = "aggression"
+# BASE_NAME = "love"
+BASE_NAME = "aggression"
 # BASE_NAME = "fear"
 # BASE_NAME = "explorer"
 # BASE_NAME = "frankenstein"
@@ -34,7 +34,7 @@ print(shape(inputs))
 print(shape(correct_outputs))
 
 
-# remove every 500th row to avoid trajectory discontinuities
+# remove every 501st row to avoid trajectory discontinuities
 inputs = np.delete(inputs, np.s_[500::501], axis=0)
 correct_outputs = np.delete(correct_outputs, np.s_[500::501], axis=0)
 

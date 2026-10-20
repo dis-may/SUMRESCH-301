@@ -1,4 +1,4 @@
-from dsms_predictor_nn import dSMSPredictorNN
+from dsms_predictor_nn import dSMSPredictorNN, new_dSMSPredictorNN
 from pylab import *
 import torch
 
@@ -11,7 +11,7 @@ def get_model(vehicle_type):
     device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
     # print(f"Using {device} device")
 
-    model = dSMSPredictorNN().to(device)
+    model = new_dSMSPredictorNN().to(device)
     base_path = Path(__file__).parent.resolve() 
     # Construct a path to a data file relative to that directory
     file_path = base_path / "ml_models" / f"{vehicle_type.name.lower()}_model.pth"
@@ -33,21 +33,21 @@ def get_frankenstein_model(combination=""):
 
     return model
 
-def get_motor_values(model, l_s, r_s, l_m, r_m):
+def get_motor_values(model, l_s, r_s):
     # model.load_state_dict(torch.load(file_path, weights_only=True))
     device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 
     def sample_output(input) :
         #return(input[0], input[1], input[2], input[3])
-        input_tensor = torch.from_numpy(input.reshape(1,4)).float().to(device)
+        input_tensor = torch.from_numpy(input.reshape(1,2)).float().to(device)
         with torch.no_grad():
             output_tensor = model(input_tensor)
         return output_tensor.cpu().detach().numpy().reshape(-1)
 
     # print(l_s, r_s, l_m, r_m)
-    s = sample_output(np.array([l_s, r_s, l_m, r_m]))
+    s = sample_output(np.array([l_s, r_s]))
     # print(s)
-    return s[2], s[3] # predicted values of (m_l, m_r)
+    return s[0], s[1] # predicted values of (m_l, m_r)
 
 
 def get_sm_values(model, l_s, r_s, l_m, r_m):
