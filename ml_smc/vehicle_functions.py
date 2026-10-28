@@ -1,24 +1,29 @@
-from dsms_predictor_nn import dSMSPredictorNN, new_dSMSPredictorNN
+from dsms_predictor_nn import dSMSPredictorNN, new_dSMSPredictorNN, sm_to_next_motor_nn
 from pylab import *
 import torch
 
 from pathlib import Path
 
-def get_model(vehicle_type):
+def get_model(vehicle_type, folder: str):
     """
     Takes in a vehicle type
     """
     device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
     # print(f"Using {device} device")
 
-    model = new_dSMSPredictorNN().to(device)
+    nn_type = None
+    if folder == "ml_models_sm_motor":
+        nn_type = sm_to_next_motor_nn
+
+    model = nn_type().to(device)
     base_path = Path(__file__).parent.resolve() 
     # Construct a path to a data file relative to that directory
-    file_path = base_path / "ml_models" / f"{vehicle_type.name.lower()}_model.pth"
+    file_path = base_path / folder / f"{vehicle_type.name.lower()}_model.pth"
     model.load_state_dict(torch.load(file_path, weights_only=True))
     model.eval()
 
     return model
+
 
 def get_frankenstein_model(combination=""):
     device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
@@ -33,19 +38,19 @@ def get_frankenstein_model(combination=""):
 
     return model
 
-def get_motor_values(model, l_s, r_s):
+def get_motor_values(model, inputs):
     # model.load_state_dict(torch.load(file_path, weights_only=True))
     device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 
     def sample_output(input) :
         #return(input[0], input[1], input[2], input[3])
-        input_tensor = torch.from_numpy(input.reshape(1,2)).float().to(device)
+        input_tensor = torch.from_numpy(input.reshape(1,len(inputs))).float().to(device)
         with torch.no_grad():
             output_tensor = model(input_tensor)
         return output_tensor.cpu().detach().numpy().reshape(-1)
 
     # print(l_s, r_s, l_m, r_m)
-    s = sample_output(np.array([l_s, r_s]))
+    s = sample_output(np.array(inputs))
     # print(s)
     return s[0], s[1] # predicted values of (m_l, m_r)
 
